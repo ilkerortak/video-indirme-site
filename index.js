@@ -1,6 +1,7 @@
 const express = require("express");
 const path = require("path");
-const ytdlp = require("yt-dlp-exec");
+const fs = require("fs");
+const ytdl = require("ytdl-core");
 
 const app = express();
 app.use(express.json());
@@ -15,9 +16,17 @@ app.get("/download", async (req, res) => {
   if (!url) return res.send("Video linki gerekli");
 
   try {
-    const file = "video.mp4";
-    await ytdlp(url, { output: file, format: "mp4" });
-    res.download(file);
+    // URL geçerli mi kontrol et
+    if (!ytdl.validateURL(url)) return res.send("Geçersiz YouTube linki");
+
+    const info = await ytdl.getInfo(url);
+    const title = info.videoDetails.title.replace(/[\/\\?%*:|"<>]/g, '-'); // geçersiz karakterleri temizle
+    const file = `${title}.mp4`;
+
+    res.header('Content-Disposition', `attachment; filename="${file}"`);
+
+    ytdl(url, { format: 'mp4' }).pipe(res);
+
   } catch (err) {
     console.error(err);
     res.send("Video indirilemedi");
