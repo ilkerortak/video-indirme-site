@@ -1,6 +1,6 @@
 const express = require("express");
 const path = require("path");
-const ytdlp = require("yt-dlp-exec");
+const { exec } = require("child_process");
 
 const app = express();
 
@@ -15,13 +15,17 @@ app.get("/download", async (req, res) => {
   const url = req.query.url;
   if (!url) return res.send("Video linki gerekli");
 
-  try {
-    const file = "video.mp4";
-    await ytdlp(url, { output: file, format: "mp4" });
+  // video.mp4 adıyla indir
+  const file = "video.mp4";
+
+  // yt-dlp çalıştır
+  exec(`yt-dlp -f mp4 -o ${file} ${url}`, (error, stdout, stderr) => {
+    if (error) {
+      console.error("Video indirilemedi:", error);
+      return res.send("Video indirilemedi");
+    }
     res.download(file);
-  } catch (err) {
-    res.send("Video indirilemedi");
-  }
+  });
 });
 
 const PORT = process.env.PORT || 8080;
